@@ -8,6 +8,7 @@
     "test": "cargo test && wasm-pack test --headless"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.170",
     "@wasm-tool/wasm-pack-plugin": "^1.1.0",
     "copy-webpack-plugin": "^5.0.3",
     "rimraf": "^3.0.0",
