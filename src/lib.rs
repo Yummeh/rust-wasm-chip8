@@ -1,6 +1,8 @@
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 
+mod chip8;
+
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
 //
@@ -21,6 +23,6 @@ pub fn main_js() -> Result<(), JsValue> {
     unsafe {
         console::log_1(&JsValue::from_str("Hello world!"));
     }
-
+    
     Ok(())
 }

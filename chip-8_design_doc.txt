@@ -1,0 +1,108 @@
+CHIP-8
+
+Intro
+    Project will be programmed in Rust programming language.
+    This should compile to webassabmly so that this can be run on the web.
+    It will use the canvas or some other web render method to display the CHIP-8 applications.
+    It will use the audio output from the webbrowser from the web to output sounds.
+    It will use the keyboard input from the webbrowser to control the application.
+
+Registers
+    16 8-bit registers (8 bits == 00000000) 
+    from V0 to VF (F in hexadecimal, 16 in binary) 
+    can hold any value from 0x00 to 0xFF
+    VF is special, flag that holds information about the results of an operation
+
+    These 8-bit registers are a dedicated location for CPU storage. This is only for short term storage, long term storage is held in memory.
+    Operations usually do: load from memory into registers; operate with those registers; storing result into memory.
+
+Memory
+    4096 bytes of memory (4KB)
+    address space: 0x000-0xFFF (hex to dec FFF = 4095, but address zero is also and address so 4096)
+    
+    0x000-0x1FF (bytes positions 0 to 511): Originally reserved for CHIP-8 interpreter, but now will not be used except for:
+    0x050-0x0A0 (bytes positions 79 to 159): Storage for 16 in built characters (0 through F)
+    0x200-0xFFF (bytes positions 511 to 4095): Instructions storage
+
+Other
+    16-bit Index Register
+        Special register to store memory adresses (its 16 bits because memory goes up to FFF, an 8 bit register would only reach FF, 16 bits reach FFFF)
+    
+    16-bit Program counter
+        Uhh it holds the address of the next instruction (16 bits again because memory goes up to FFF)
+    
+     8-bit stack Pointer
+        Because the stack is only 16 levels (16 = 0xF) 8 bit (8 bit can hold 0xFF) can manage.
+
+Stack
+    16 levels
+    Instruction 'CALL' will cause the CPU to begin executing in a different area. 'RET' must return the program to the position where it hit the last 'CALL'.
+
+    because its 16 levels it can hold 16 PCs
+
+   
+Timers
+    Delay timer
+        If it's zero it stays zero, if it is greater than zero it decreasees at a rate of 60Hz. (On the guide he uses cycle clock??)
+
+    Sound timer
+        Works the same as delay timer (decrementing at 60Hz if non-zero)
+        Single tone if non-zero
+
+Graphics
+    64x32 Monochrome Display Memory
+        64 pixels wide, 32 pixels high
+        Additional memory buffer for storing the graphics
+        Pixels are either on or off
+
+        Should render to some buffer, then wasm implementation should render that buffer to canvas
+
+        XOR sprite with display to get new display
+        Wrap sprite to other side of the screen if off-screen
+
+Sound
+    Not quite sure how but ill figure it out
+
+Input
+    16 input keys that map 0 trough F
+    Key state is pressed or not
+
+    Accept array of 16 that are mapped to specific keyboard layout.
+    Input from javascript keyboard events: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
+
+Opcodes
+    Opcodes are instructions for the cpu, in this case the CHIP-8 CPU. Opcodes encode an operation with data into a number that a machine can read.
+
+
+Loading rom 
+    (i think 'fileName'.ch8)
+
+
+
+
+
+Pseudo structure
+
+
+Chip-8
+    CPU {
+        Registers
+        Memory
+        Index register
+        Program counter
+        Stack pointer
+    }
+    Graphics display
+    Audio
+    Input
+
+    priv:
+
+
+    pub:
+
+    loadRom()
+    start()
+    stop()
+    pauze()
+
