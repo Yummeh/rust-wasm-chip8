@@ -9,6 +9,7 @@ module.exports = {
 	entry: {
 		index: "./js/index.ts"
 	},
+	devtool: 'inline-source-map',
 	output: {
 		path: dist,
 		filename: "[name].js"
