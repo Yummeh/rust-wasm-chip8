@@ -1,7 +1,3 @@
-pub struct Chip8Audio {
+pub struct Chip8Audio {}
 
-}
-
-trait OutputAudio {
-
-}
+trait OutputAudio {}

@@ -26,3 +26,4 @@ pub fn main_js() -> Result<(), JsValue> {
     
     Ok(())
 }
+
