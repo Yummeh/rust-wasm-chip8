@@ -1,0 +1,6 @@
+{
+    "root": ".",
+    "crates": [
+        "chip8_rust_wasm"
+    ]
+}

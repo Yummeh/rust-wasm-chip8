@@ -2,34 +2,27 @@
   "author": "Yummeh <ralphdehorde@gmail.com>",
   "name": "rust-wasm-chip8-emulator",
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "start": "sirv public --no-clear",
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
-    "test": "cargo test && wasm-pack test --headless"
+    "test": "cd chip8_rust_wasm && cargo test && wasm-pack test --headless",
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "rsw:deploy": "rsw && npm run build"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^19.0.1",
-    "@rollup/plugin-node-resolve": "^13.0.2",
-    "@rollup/plugin-typescript": "^8.0.0",
-    "@rollup/plugin-wasm": "^5.1.2",
+    "@sveltejs/vite-plugin-svelte": "^1.0.0-next.11",
     "@tsconfig/svelte": "^2.0.0",
     "@types/lodash": "^4.14.170",
-    "@wasm-tool/rollup-plugin-rust": "^1.0.7",
-    "rimraf": "^3.0.0",
-    "rollup": "^2.3.4",
-    "rollup-plugin-css-only": "^3.1.0",
-    "rollup-plugin-livereload": "^2.0.5",
-    "rollup-plugin-svelte": "^7.1.0",
-    "rollup-plugin-terser": "^7.0.2",
+    "rsw-node": "^0.1.2",
     "svelte": "^3.40.2",
     "svelte-check": "^2.0.0",
     "svelte-preprocess": "^4.0.0",
     "ts-loader": "^8.3.0",
     "tslib": "^2.0.0",
-    "typescript": "^4.3.4"
-  },
-  "dependencies": {
-    "sirv-cli": "^1.0.12"
+    "typescript": "^4.3.4",
+    "vite": "^2.4.3",
+    "vite-plugin-rsw": "^1.8.0"
   }
 }
