@@ -1,3 +1,0 @@
-"build": "rimraf dist pkg && webpack",
-    "start": "rimraf dist pkg && webpack-dev-server --open -d",
-    "test": "cargo test && wasm-pack test --headless",

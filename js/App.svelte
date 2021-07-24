@@ -1,5 +1,5 @@
 <script lang="ts">
-	import wasmo from './wasmWrapper';
+	export let name: string;
 
 	function fn() {
 		// console.log("Hello");
