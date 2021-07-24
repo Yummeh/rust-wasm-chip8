@@ -1,12 +1,29 @@
-import * as _ from 'lodash';
-import("../pkg/index.js").catch(console.error);
+// import * as _ from 'lodash';
+// // import wasm 
+// // import("../pkg").catch(console.error);
+// import { main_js } from "../pkg/rust_chip8_wasm";
 
-function component() {
-    const element = document.createElement('div');
+// main_js();
 
-    element.innerHTML = _.join(['Hello', 'webpack'], ' ');
+// function component() {
+//     const element = document.createElement('div');
 
-    return element;
-}
+//     element.innerHTML = _.join(['Hello', 'webpack'], ' ');
 
-document.body.appendChild(component());
+//     return element;
+// }
+
+// document.body.appendChild(component());
+
+
+
+import App from './App.svelte';
+
+const app = new App({
+    target: document.body,
+    props: {
+        name: 'world'
+    }
+});
+
+export default app;

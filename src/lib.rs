@@ -23,7 +23,13 @@ pub fn main_js() -> Result<(), JsValue> {
     unsafe {
         console::log_1(&JsValue::from_str("Hello world!"));
     }
-    
+
     Ok(())
 }
 
+#[wasm_bindgen]
+pub fn greet() {
+    unsafe {
+        console::log_1(&JsValue::from_str("Pressed"));
+    }
+}
