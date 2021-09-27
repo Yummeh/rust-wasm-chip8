@@ -59,6 +59,14 @@ Graphics
 
         XOR sprite with display to get new display
         Wrap sprite to other side of the screen if off-screen
+    
+    Web graphics
+        Canvas
+
+
+        WebGL
+            Write from Rust to 2d texture then draw that to WebGL?
+            If 
 
 Sound
     Not quite sure how but ill figure it out
@@ -105,4 +113,29 @@ Chip-8
     start()
     stop()
     pauze()
+
+
+
+TODO:
+Check where to place op code functions
+
+Rethink program design structure
+Opcodes for input
+Implement WebGl input
+Implement WebGL audio
+Get file from project folder instead of "Select file"
+
+TODO lower prio:
+Scale WebGL screen correctly, compute resolution for fragment shader
+
+
+DOING:
+
+
+
+DONE:
+WebGL display working, can set specified pixels
+Loading rom into memory
+Main 60fps/hz loop
+Implemented most opcodes
 
