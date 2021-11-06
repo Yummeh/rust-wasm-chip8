@@ -1,10 +1,9 @@
-use std::{u16, u8, usize};
+use std::{cell::RefCell, rc::Rc, u16, u8, usize};
 
-use super::{
-    display::{Chip8WebGLDisplay},
-    keyboard_input::Chip8Input,
-    Chip8, Chip8Memory,
-};
+use wasm_bindgen::JsValue;
+use web_sys::console;
+
+use super::{display::Chip8WebGLDisplay, keyboard_input::Chip8Input, Chip8, Chip8Memory};
 
 pub struct Chip8CPU {
     index_registers: [u8; 16],
@@ -15,16 +14,19 @@ pub struct Chip8CPU {
     opcode: u16,
     delay_timer: u8,
     sound_timer: u8,
+    chip8_memory: Rc<RefCell<Chip8Memory>>,
+    chip8_display: Rc<RefCell<Chip8WebGLDisplay>>,
+    func_table: [fn(&mut Chip8CPU); 0xF + 1],
+    table0: [fn(&mut Chip8CPU); 0xE + 1],
+    table8: [fn(&mut Chip8CPU); 0xE + 1],
+    table_e: [fn(&mut Chip8CPU); 0xE + 1],
+    table_f: [fn(&mut Chip8CPU); 0x65 + 1],
     // table: [Fn; 10],
 }
 
 impl Chip8CPU {
-    pub fn set_register(&mut self, index: &u8, value: &u8) {
-        panic!("Function has not been implemented");
-    }
-
-    pub fn new() -> Chip8CPU {
-        Chip8CPU {
+    pub fn new(mem: Rc<RefCell<Chip8Memory>>, disp: Rc<RefCell<Chip8WebGLDisplay>>) -> Chip8CPU {
+        let mut cpu = Chip8CPU {
             index_registers: [0; 16],
             stack: [0; 16],
             index: 0,
@@ -33,17 +35,94 @@ impl Chip8CPU {
             opcode: 0x00,
             delay_timer: 0,
             sound_timer: 0,
-        }
+            chip8_memory: mem,
+            chip8_display: disp,
+            func_table: [Chip8CPU::no_op; 0xF + 1],
+            table0: [Chip8CPU::no_op; 0xE + 1],
+            table8: [Chip8CPU::no_op; 0xE + 1],
+            table_e: [Chip8CPU::no_op; 0xE + 1],
+            table_f: [Chip8CPU::no_op; 0x65 + 1],
+        };
+
+        cpu.func_table[0] = Chip8CPU::table_0;
+        cpu.func_table[1] = Chip8CPU::op_1nnn;
+        cpu.func_table[2] = Chip8CPU::op_2nnn;
+        cpu.func_table[3] = Chip8CPU::op_3xnn;
+        cpu.func_table[4] = Chip8CPU::op_4xnn;
+        cpu.func_table[5] = Chip8CPU::op_5xy0;
+        cpu.func_table[6] = Chip8CPU::op_6xnn;
+        cpu.func_table[7] = Chip8CPU::op_7xnn;
+        cpu.func_table[8] = Chip8CPU::table_8;
+        cpu.func_table[9] = Chip8CPU::op_9xy0;
+        cpu.func_table[0xA] = Chip8CPU::op_annn;
+        cpu.func_table[0xB] = Chip8CPU::op_bnnn;
+        cpu.func_table[0xC] = Chip8CPU::op_cxnn;
+        cpu.func_table[0xD] = Chip8CPU::op_dxyn;
+        cpu.func_table[0xE] = Chip8CPU::table_e;
+        cpu.func_table[0xF] = Chip8CPU::table_f;
+
+        cpu.table0[0x0] = Chip8CPU::op_00e0;
+        cpu.table0[0xE] = Chip8CPU::op_00ee;
+
+        cpu.table8[0x0] = Chip8CPU::op_8xy0;
+        cpu.table8[0x1] = Chip8CPU::op_8xy1;
+        cpu.table8[0x2] = Chip8CPU::op_8xy2;
+        cpu.table8[0x3] = Chip8CPU::op_8xy3;
+        cpu.table8[0x4] = Chip8CPU::op_8xy4;
+        cpu.table8[0x5] = Chip8CPU::op_8xy5;
+        cpu.table8[0x6] = Chip8CPU::op_8xy6;
+        cpu.table8[0x7] = Chip8CPU::op_8xy7;
+        cpu.table8[0xE] = Chip8CPU::op_8xye;
+
+        // TODO: implement input functions
+        cpu.table_e[0x1] = Chip8CPU::op_exa1;
+        cpu.table_e[0xE] = Chip8CPU::op_ex9e;
+
+        cpu.table_f[0x07] = Chip8CPU::op_fx07;
+        cpu.table_f[0x0A] = Chip8CPU::op_fx0a;
+        cpu.table_f[0x15] = Chip8CPU::op_fx15;
+        cpu.table_f[0x18] = Chip8CPU::op_fx18;
+        cpu.table_f[0x1E] = Chip8CPU::op_fx1e;
+        cpu.table_f[0x29] = Chip8CPU::op_fx29;
+        cpu.table_f[0x33] = Chip8CPU::op_fx33;
+        cpu.table_f[0x55] = Chip8CPU::op_fx55;
+        cpu.table_f[0x65] = Chip8CPU::op_fx65;
+
+        cpu
     }
 
-    fn cycle(&mut self, memory: &mut Chip8Memory) {
+    fn table_0(&mut self) {
+        self.table0[(self.opcode & 0x000F) as usize](self);
+    }
+
+    fn table_8(&mut self) {
+        self.table8[(self.opcode & 0x000F) as usize](self);
+    }
+
+    fn table_e(&mut self) {
+        self.table_e[(self.opcode & 0x000F) as usize](self);
+    }
+
+    fn table_f(&mut self) {
+        self.table_f[(self.opcode & 0x00FF) as usize](self);
+    }
+
+    pub fn cycle(&mut self) {
         // Opcodes are stored in memory as 2 u8's so to get a u16 opcode use bitmask
-        self.opcode = ((memory.data[self.pc as usize] as u16) << 8)
-            | memory.data[self.pc as usize + 1] as u16;
-        self.pc += 2;
+        {
+            let memory = self.chip8_memory.borrow_mut();
+
+            self.opcode = ((memory.data[self.pc as usize] as u16) << 8)
+                | memory.data[self.pc as usize + 1] as u16;
+            self.pc += 2;
+        }
+
+        // unsafe {
+        //     console::log_1(&JsValue::from_str(format!("{:x}", self.opcode).as_str()));
+        // }
 
         // Function pointer shit
-        // TODO: Call function pointer table
+        self.func_table[((self.opcode & 0xF000) >> 12) as usize](self);
 
         // Decrease delay timer
         if self.delay_timer > 0 {
@@ -56,9 +135,12 @@ impl Chip8CPU {
         }
     }
 
+    fn no_op(&mut self) {}
+
     // Clear display
-    fn op_00e0(&mut self, display: &mut Chip8WebGLDisplay) {
-        display.clear();
+    fn op_00e0(&mut self) {
+        self.chip8_display.borrow_mut().clear();
+        // display.clear();
     }
 
     // Return
@@ -132,7 +214,7 @@ impl Chip8CPU {
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
         let nn = self.opcode as u8;
 
-        self.index_registers[x as usize] += nn;
+        self.index_registers[x as usize] = self.index_registers[x as usize].wrapping_add(nn);
     }
 
     // Set Vx to value of Vy
@@ -268,12 +350,15 @@ impl Chip8CPU {
     // I value does not change after the execution of this instruction.
     // As described above, VF is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn,
     // and to 0 if that does not happen
-    fn op_dxyn(&mut self, display: &mut Chip8WebGLDisplay, memory: &mut Chip8Memory) {
+    fn op_dxyn(&mut self) {
+        let display = &mut self.chip8_display.borrow_mut();
+        let memory = self.chip8_memory.borrow_mut();
+
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
         let y = ((self.opcode & 0x00F0) >> 4) as u8;
 
         let x_pos = self.index_registers[x as usize] % Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH;
-        let y_pos = self.index_registers[y as usize] & Chip8WebGLDisplay::CHIP8_DISPLAY_HEIGHT;
+        let y_pos = self.index_registers[y as usize] % Chip8WebGLDisplay::CHIP8_DISPLAY_HEIGHT;
 
         let width = 8_u8;
         let height = (self.opcode & 0xF) as u8;
@@ -285,7 +370,7 @@ impl Chip8CPU {
             let pixels = memory.data[(self.index + i_y as u16) as usize];
 
             for i_x in 0..width {
-                let mut pixel_state = (pixels >> i_x) & 0x1;
+                let mut pixel_state = (pixels >> (width - 1 - i_x)) & 0x1;
 
                 if pixel_state == 0 {
                     pixel_state = 0x00;
@@ -304,7 +389,7 @@ impl Chip8CPU {
 
     // Skips the next instruction if the key stored in VX is pressed.
     // (Usually the next instruction is a jump to skip a code block);
-    fn op_ex9e(&mut self, input: &Chip8Input) {
+    fn op_ex9e(&mut self) {
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
 
         // TODO: Implement input
@@ -317,7 +402,7 @@ impl Chip8CPU {
 
     // Skips the next instruction if the key stored in VX is not pressed.
     // (Usually the next instruction is a jump to skip a code block);
-    fn op_exa1(&mut self, input: &Chip8Input) {
+    fn op_exa1(&mut self) {
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
 
         // TODO: Implement input
@@ -380,7 +465,9 @@ impl Chip8CPU {
     // the middle digit at I plus 1, and the least significant digit at I plus 2.
     // (In other words, take the decimal representation of VX, place the hundreds digit in memory at location in I,
     // the tens digit at location I+1, and the ones digit at location I+2.);
-    fn op_fx33(&mut self, memory: &mut Chip8Memory) {
+    fn op_fx33(&mut self) {
+        let memory = &mut self.chip8_memory.borrow_mut();
+
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
         let mut value = self.index_registers[x as usize];
 
@@ -392,7 +479,9 @@ impl Chip8CPU {
 
     // Stores V0 to VX (including VX) in memory starting at address I.
     // The offset from I is increased by 1 for each value written, but I itself is left unmodified.
-    fn op_fx55(&mut self, memory: &mut Chip8Memory) {
+    fn op_fx55(&mut self) {
+        let memory = &mut self.chip8_memory.borrow_mut();
+
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
 
         for i in 0..x {
@@ -402,7 +491,9 @@ impl Chip8CPU {
 
     // Fills V0 to VX (including VX) with values from memory starting at address I.
     // The offset from I is increased by 1 for each value written, but I itself is left unmodified.
-    fn op_fx65(&mut self, memory: &mut Chip8Memory) {
+    fn op_fx65(&mut self) {
+        let memory = &mut self.chip8_memory.borrow_mut();
+
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
 
         for i in 0..x {
@@ -412,6 +503,10 @@ impl Chip8CPU {
 
     pub fn random_byte() -> u8 {
         rand::random::<u8>()
+    }
+
+    pub fn unit_tests(&mut self) {
+        // self.
     }
 }
 

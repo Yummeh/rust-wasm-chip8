@@ -1,7 +1,6 @@
 <script lang="ts">
 	export let name: string;
 	import init, {
-		draw_to_canvas,
 		greet,
 		start,
 		stop_program,

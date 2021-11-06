@@ -235,7 +235,7 @@ impl Chip8WebGLDisplay {
         self.video_buffer = [0; 64 * 32];
     }
 
-    pub fn set_pixel(&mut self, x: u8, y: u8, state: bool) {
+    pub fn set_pixel(&mut self, x: u32, y: u32, state: bool) {
         if state {
             self.video_buffer[(y * 64 + x) as usize] = 0xFF;
         } else {
@@ -244,18 +244,27 @@ impl Chip8WebGLDisplay {
     }
 
     pub fn xor_pixel(&mut self, x: u8, y: u8, pixel_color: u8) -> bool {
-        if x > 0
-            && x < Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH
-            && y > 0
-            && y < Chip8WebGLDisplay::CHIP8_DISPLAY_HEIGHT
+        
+
+        if x < Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH && y < Chip8WebGLDisplay::CHIP8_DISPLAY_HEIGHT
         {
-            let px_before =
-                self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH + x) as usize];
-            let px_after = px_before & pixel_color;
+            let x = x as u32;
+            let y = y as u32;
+
+            let y = Chip8WebGLDisplay::CHIP8_DISPLAY_HEIGHT as u32 - y - 1;
+            // let x = Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 - x - 1;
+
+
+            let px_before = self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 + x) as usize];
+            self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 + x) as usize] ^= pixel_color;
+
+            let px_after = self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 + x) as usize];
 
             if px_before == 0xFF && px_after == 0x00 {
-                true;
+                return true;
             }
+        } else {
+            // panic!("Yikes out of bounds: x: {} y: {}", x, y);
         }
 
         false
@@ -310,10 +319,6 @@ impl Chip8WebGLDisplay {
         let border = 0;
         let format = WebGl2RenderingContext::RED;
         let gl_type = WebGl2RenderingContext::UNSIGNED_BYTE;
-
-        unsafe {
-            console::log_1(&JsValue::from_str("Hello"));
-        }
 
         gl.tex_sub_image_2d_with_i32_and_i32_and_u32_and_type_and_opt_u8_array(
             WebGl2RenderingContext::TEXTURE_2D,             // target: u32,

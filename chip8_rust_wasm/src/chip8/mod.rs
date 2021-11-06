@@ -4,7 +4,7 @@ mod display;
 mod keyboard_input;
 mod timer;
 
-use std::{borrow::BorrowMut, cell::RefCell, path::Path, rc::Rc, u8, usize, vec};
+use std::{cell::RefCell, path::Path, rc::Rc, u8, usize, vec};
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -14,19 +14,8 @@ use web_sys::{
 };
 
 use self::display::Chip8WebGLDisplay;
-// ::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
 const CHIP8_FILE_INPUT_DOC_ID: &str = "chip8-file-input";
-
-fn window() -> web_sys::Window {
-    web_sys::window().expect("no global `window` exists")
-}
-
-fn request_animation_frame(f: &Closure<dyn FnMut()>) {
-    window()
-        .request_animation_frame(f.as_ref().unchecked_ref())
-        .expect("should register `requestAnimationFrame` OK");
-}
 
 pub enum Chip8Error {
     NoRomFound(String),
@@ -37,11 +26,11 @@ pub enum Chip8FileIOError {
     NoFileSelected,
 }
 
-#[wasm_bindgen]
+// #[wasm_bindgen]
 pub struct Chip8 {
     chip8_cpu: cpu::Chip8CPU,
-    chip8_memory: Chip8Memory,
-    chip8_display: Chip8WebGLDisplay,
+    chip8_memory: Rc<RefCell<Chip8Memory>>,
+    chip8_display: Rc<RefCell<Chip8WebGLDisplay>>,
     delay_timer: timer::Chip8DelayTimer,
     audio_timer: timer::Chip8AudioTimer,
     chip8_input: keyboard_input::Chip8Input,
@@ -50,21 +39,23 @@ pub struct Chip8 {
 
 impl Chip8 {
     pub fn new() -> Chip8 {
+        let mem = Rc::new(RefCell::new(Chip8Memory::new()));
+        let disp = Rc::new(RefCell::new(Chip8WebGLDisplay::new("chip8_canvas")));
+        // let ok = &*mem.borrow_mut();
+        // let ok = disp.clone();
+
         Chip8 {
             rom: None,
-            chip8_cpu: cpu::Chip8CPU::new(),
-            chip8_memory: Chip8Memory::new(),
-            chip8_display: Chip8WebGLDisplay::new("chip8_canvas"),
+            chip8_cpu: cpu::Chip8CPU::new(mem.clone(), disp.clone()),
+            chip8_memory: mem.clone(),
+            chip8_display: disp.clone(),
             delay_timer: timer::Chip8DelayTimer {},
             audio_timer: timer::Chip8AudioTimer {},
             chip8_input: keyboard_input::Chip8Input { num: 10 },
         }
     }
 
-    pub fn set_rom<P>(&mut self, path: P) -> Result<(), Chip8FileIOError>
-    where
-        P: AsRef<Path>,
-    {
+    pub fn set_rom(&mut self) -> Result<(), Chip8FileIOError> {
         let document: Document = web_sys::window().unwrap().document().unwrap();
         let file_input_element = document.get_element_by_id(&CHIP8_FILE_INPUT_DOC_ID).expect(
             format!(
@@ -110,21 +101,16 @@ impl Chip8 {
             }
         };
 
-        // Old stuff in comments
-        // Creating a rust array, i.e. [u8, 4096],
-        // create a new array with specified size -> read old array into new array -> convert js TypedArray to Rust array,
-        // let array = js_sys::Uint8Array::new(&array);
-        // let new_array = js_sys::Uint8Array::new_with_length(Chip8Memory::MEMORY_SIZE as u32);
-        // new_array.set(&array, 0);
-        // let mut rust_array: [u8; Chip8Memory::MEMORY_SIZE] = [0; Chip8Memory::MEMORY_SIZE];
-        // new_array.copy_to(&mut rust_array);
-        // let len = new_array.byte_length() as usize;
-
         let new_array = js_sys::Uint8Array::new(&array);
 
         // Get memory stuff
-        let max = self.chip8_memory.data.len();
-        let buf = &mut self.chip8_memory.data[Chip8Memory::START_ADRESS as usize..max - 1];
+        // let max = self.chip8_memory.data.len();
+        // let buf = &mut self.chip8_memory.data[Chip8Memory::START_ADRESS as usize..max - 1];
+        // let buf = &mut self.chip8_memory.borrow_mut().data[Chip8Memory::START_ADRESS as usize..max - 1];
+
+        let memory = &mut self.chip8_memory.borrow_mut();
+        let max = memory.data.len();
+        let buf = &mut memory.data[Chip8Memory::START_ADRESS as usize..max - 1];
 
         // new_array does not have consistent length, indexing new_array with buf.len() as max range could be out of bounds.
         let iter_length;
@@ -146,40 +132,49 @@ impl Chip8 {
         // file.read(buf).unwrap();
     }
 
-    pub fn update(&mut self, some_val: f32) {
-        // self.chip8_display.set_pixel(some_val as i32, 0, true);
-        // if some_val as i32 % 2 == 0 {
-        //     self.chip8_display.set_checkerboard(true);
-        // } else {
-        //     self.chip8_display.set_checkerboard(false);
+    pub fn test(&mut self) {
+        let memory = self.chip8_memory.borrow_mut();
+        let display = &mut self.chip8_display.borrow_mut();
 
-        // }
-        self.chip8_display.set_pixel(some_val as u8, 0, true);
-        self.chip8_display.draw();
+        let width = 8u8;
+        let height = 8u8;
 
-        unsafe {
-            // console::log_1(&JsValue::from_str(format!("Val: {}", some_val as i32).as_str()));
+        let x_pos = 0u8;
+        let y_pos = 5u8;
+
+        for i_y in 0..height {
+            // let pixels = memory.data[(self.index + i_y as u16) as usize];
+
+            for i_x in 0..width {
+                // let mut pixel_state = (pixels >> i_x) & 0x1;
+
+                // if pixel_state == 0 {
+                //     pixel_state = 0x00;
+                // } else {
+                //     pixel_state = 0xFF;
+                // }
+
+                // display.set_pixel((i_x + x_pos) as u32, (i_y + y_pos) as u32, true);
+                unsafe {
+                    console::log_1(&JsValue::from_str(format!("x: {} y: {}", i_x, i_y).as_str()));
+                }
+                let flipped = display.xor_pixel(i_x, i_y, 0xFF);
+
+                // if flipped {
+                //     self.index_registers[0xF] = 1;
+                // }
+            }
         }
-        // let rom = &mut self.rom;
 
-        // let mut file = if let Some(file) = rom {
-        //     file
-        // } else {
-        //     return Err(Chip8Error::NoRomFound(
-        //         "No rom path specified, call set_rom!".to_owned(),
-        //     ));
-        // };
+        display.draw();
+    }
 
-        // // File :D
+    pub fn update(&mut self, some_val: f32) {
+        self.chip8_cpu.cycle();
 
-        // self.cpu.start(
-        //     &mut self.memory,
-        //     display,
-        //     &mut self.audio_timer,
-        //     &mut self.delay_timer,
-        //     &mut self.input,
-        // );
-
+        let disp = &mut self.chip8_display.borrow_mut();
+        // disp.set_pixel(some_val as u32, 0, true);
+        disp.draw();
     }
 }
 
@@ -223,71 +218,4 @@ impl Chip8Memory {
 
         memory
     }
-}
-
-// #[test]
-fn test_chip8_run() {
-    let mut chip8 = Chip8::new();
-    match chip8.set_rom("src/test_stuff/TestBinary0-9") {
-        Ok(()) => {}
-        Err(err) => unsafe {
-            console::log_1(&JsValue::from_str("Please select a file!"));
-            return;
-        },
-    }
-
-    // let result = chip8.update();
-
-}
-
-// #[test]
-// fn test_load_rom() {
-//     let mut chip8_memory = Chip8Memory { memory: [0; 4096] };
-//     let mut file = File::open("src/test_stuff/TestBinary0-9").expect("Opening file failed");
-
-//     assert_eq!(chip8_memory.memory[0], 0);
-//     assert_eq!(chip8_memory.memory[400], 0);
-
-//     chip8_memory.load_rom(&mut file);
-
-//     assert_eq!(
-//         format!("{:02x}", 0x01),
-//         format!(
-//             "{:02x}",
-//             chip8_memory.memory[Chip8Memory::START_ADRESS as usize]
-//         )
-//     );
-//     assert_eq!(
-//         format!("{:02x}", 0x23),
-//         format!(
-//             "{:02x}",
-//             chip8_memory.memory[(Chip8Memory::START_ADRESS + 1) as usize]
-//         )
-//     );
-//     assert_eq!(
-//         format!("{:02x}", 0x89),
-//         format!(
-//             "{:02x}",
-//             chip8_memory.memory[(Chip8Memory::START_ADRESS + 4) as usize]
-//         )
-//     );
-// }
-
-#[test]
-fn test_new_chip8memory() {
-    let chip8_memory = Chip8Memory::new();
-
-    assert_eq!(
-        chip8_memory.data[Chip8Memory::FONTSET_START_ADRESS as usize],
-        Chip8Memory::FONT_SET[0]
-    );
-    assert_eq!(
-        chip8_memory.data[Chip8Memory::FONTSET_START_ADRESS as usize + 1],
-        Chip8Memory::FONT_SET[1]
-    );
-    assert_eq!(
-        chip8_memory.data
-            [(Chip8Memory::FONTSET_START_ADRESS + Chip8Memory::FONTSET_SIZE - 1) as usize],
-        Chip8Memory::FONT_SET[Chip8Memory::FONTSET_SIZE as usize - 1]
-    );
 }
