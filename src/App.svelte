@@ -91,7 +91,9 @@
 		<!-- how to build Svelte apps. Test -->
 	</p>
 
-	<canvas id="chip8_canvas" width="800" height="400" />
+	<div id="chip8_outline">
+		<canvas id="chip8_canvas" width="800" height="400" />
+	</div>
 
 	<div class="next-line">
 		<button id="press-me-button" on:click={start_chip8}>Start</button>
@@ -103,8 +105,9 @@
 				stop_program();
 			}}>Stop</button
 		>
-		<button id="press-me-button" on:click={test_comp}>Test compilation</button>
-
+		<button id="press-me-button" on:click={test_comp}
+			>Test compilation</button
+		>
 	</div>
 </main>
 
@@ -137,12 +140,16 @@
 		width: 400px;
 		height: 200px;
 
-		margin-top: 10px;
-
 		/* background-color: red; */
-		box-shadow: 0px 0px 5px 5px rgb(160, 160, 160);
+		box-shadow: 0px 0px 5px 5px rgb(160, 160, 160, 0.1);
+		border-radius: 10px;
+		padding: 10px;
 		/* background-color: red; */
 	}
+
+	/* #chip8_outline {
+		margin: 200;
+	} */
 
 	.container {
 		width: 100%;

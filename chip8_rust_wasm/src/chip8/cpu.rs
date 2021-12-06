@@ -271,15 +271,17 @@ impl Chip8CPU {
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
         let y = ((self.opcode & 0x00F0) >> 4) as u8;
 
-        if y > x {
+        let vx = self.index_registers[x as usize];
+        let vy = self.index_registers[y as usize];
+
+        if vy > vx {
             self.index_registers[0xF_usize] = 0;
         } else {
             self.index_registers[0xF_usize] = 1;
         }
 
         // Allow integer wrapping
-        self.index_registers[x as usize] =
-            self.index_registers[x as usize].wrapping_sub(self.index_registers[y as usize]);
+        self.index_registers[x as usize] = vx.wrapping_sub(vy);
     }
 
     // Stores the least significant bit of VX in VF and then shifts VX to the right by 1.
@@ -484,7 +486,7 @@ impl Chip8CPU {
 
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
 
-        for i in 0..x {
+        for i in 0..x + 1 {
             memory.data[(self.index + i as u16) as usize] = self.index_registers[i as usize];
         }
     }
@@ -496,7 +498,7 @@ impl Chip8CPU {
 
         let x = ((self.opcode & 0x0F00) >> 8) as u8;
 
-        for i in 0..x {
+        for i in 0..x + 1 {
             self.index_registers[i as usize] = memory.data[(self.index + i as u16) as usize];
         }
     }

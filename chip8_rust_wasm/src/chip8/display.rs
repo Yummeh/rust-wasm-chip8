@@ -244,8 +244,6 @@ impl Chip8WebGLDisplay {
     }
 
     pub fn xor_pixel(&mut self, x: u8, y: u8, pixel_color: u8) -> bool {
-        
-
         if x < Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH && y < Chip8WebGLDisplay::CHIP8_DISPLAY_HEIGHT
         {
             let x = x as u32;
@@ -254,11 +252,13 @@ impl Chip8WebGLDisplay {
             let y = Chip8WebGLDisplay::CHIP8_DISPLAY_HEIGHT as u32 - y - 1;
             // let x = Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 - x - 1;
 
+            let px_before =
+                self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 + x) as usize];
+            self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 + x) as usize] ^=
+                pixel_color;
 
-            let px_before = self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 + x) as usize];
-            self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 + x) as usize] ^= pixel_color;
-
-            let px_after = self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 + x) as usize];
+            let px_after =
+                self.video_buffer[(y * Chip8WebGLDisplay::CHIP8_DISPLAY_WIDTH as u32 + x) as usize];
 
             if px_before == 0xFF && px_after == 0x00 {
                 return true;

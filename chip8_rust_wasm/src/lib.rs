@@ -48,10 +48,13 @@ fn request_animation_frame(f: &Closure<dyn FnMut()>) {
         .expect("should register `requestAnimationFrame` OK");
 }
 
-fn set_timeout_with_callback(f: &Closure<dyn FnMut()>, delay: i32) -> i32 {
+fn set_timeout_with_callback_and_timeout_and_arguments_0(
+    f: &Closure<dyn FnMut()>,
+    timeout: i32,
+) -> i32 {
     let res = window()
-        .set_interval_with_callback_and_timeout_and_arguments_0(f.as_ref().unchecked_ref(), delay)
-        .expect("should register `requestAnimationFrame` OK");
+        .set_timeout_with_callback_and_timeout_and_arguments_0(f.as_ref().unchecked_ref(), timeout)
+        .expect("should register `timeout` OK");
 
     res
 }
@@ -114,11 +117,48 @@ pub async fn start() {
     let f: Rc<RefCell<Option<Closure<dyn FnMut()>>>> = Rc::new(RefCell::new(None));
     let g = f.clone();
 
-    let delay1: i32 = 100;
-    let delay2: i32 = 16;
+    let delay1: i32 = 5;
+    let delay2: i32 = 8;
+    let updatesPerFrame: i32 = 6;
     let mut last_cycle_time: f64 = Date::now();
 
     let mut i: f32 = 0.0;
+
+    // *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
+    //     // let current_time: f64 = Date::now();
+    //     // let delta_time = current_time - last_cycle_time;
+
+    //     // if delta_time > delay2 as f64 {
+    //     //     last_cycle_time = current_time;
+
+    //     // chip8_emulator.update(i);
+    //     //     i += 1.0;
+    //     // }
+    //     for j in 0..updatesPerFrame {
+    //         chip8_emulator.update(i);
+    //     }
+
+    //     unsafe {
+    //         if STOP_PROGRAM {
+    //             STOP_PROGRAM = false;
+    //             BLOCK_START = false;
+    //             // window().clear_timeout_with_handle(TIMEOUT);
+    //             let _ = f.borrow_mut().take();
+    //             return;
+    //         }
+    //     }
+
+    //     set_timeout_with_callback_and_timeout_and_arguments_0(f.borrow().as_ref().unwrap(), delay1);
+
+    //     // request_animation_frame(f.borrow().as_ref().unwrap());
+    // }) as Box<dyn FnMut()>));
+
+    // set_timeout_with_callback_and_timeout_and_arguments_0(g.borrow().as_ref().unwrap(), delay1);
+
+    // // set_timeout_with_callback(g.borrow().as_ref().unwrap(), delay1);
+
+    // // request_animation_frame(g.borrow().as_ref().unwrap());
+    // return;
 
     *g.borrow_mut() = Some(Closure::wrap(Box::new(move || {
         // let current_time: f64 = Date::now();
@@ -126,8 +166,9 @@ pub async fn start() {
 
         // if delta_time > delay2 as f64 {
         //     last_cycle_time = current_time;
-
-        chip8_emulator.update(i);
+        for _ in 0..11 {
+            chip8_emulator.update(i);
+        }
         //     i += 1.0;
         // }
 
